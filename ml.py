@@ -10,45 +10,34 @@ MODEL_TYPES = [
     ensemble.RandomForestClassifier,
 ]
 
-model = random.choice(MODEL_TYPES)()
-currInputs = 0
+# TODO: abstract this into a class so we keep the model object under the hood
 
 
-def train_model_and_make_prediction(
-    dataset: pd.DataFrame,
-    output: str,
-    inputs: List[str],
-    hypothetical_input: Dict[str, float],
-) -> float:  # probability of output being `True` for hypothetical input
-    assert dataset[output].dtype in (bool,)
-    assert all(dataset[input].dtype in (float, int) for input in inputs)
+class SimpleModel:
+    model: any
+    modelOutput: str
+    modelInputs: List[str]
 
-    X = dataset[inputs]
-    y = dataset[output]
+    def __init__(self, _modelOutput, _modelInputs) -> None:
+        self.modelOutput = _modelOutput
+        self.modelInputs = _modelInputs
 
-    model.fit(X, y)
+    def train_model(
+            self,
+            dataset: pd.DataFrame,) -> any:
+        # self.modelInputs = inputs
+        # self.modelOutput = output
+        assert dataset[self.modelOutput].dtype in (bool,)
+        assert all(dataset[input].dtype in (float, int) for input in self.modelInputs)
 
-    return model.predict_proba(
-        pd.DataFrame({input: [hypothetical_input[input]] for input in inputs})
-    )[0, model.classes_.tolist().index(True)]
+        X = dataset[self.modelInputs]
+        y = dataset[self.modelOutput]
 
+        self.model = random.choice(MODEL_TYPES)()
+        self.model.fit(X, y)
 
-def train_model(
-        dataset: pd.DataFrame,
-        output: str,
-        inputs: List[str],):
-    assert dataset[output].dtype in (bool,)
-    assert all(dataset[input].dtype in (float, int) for input in inputs)
-    currInputs = inputs
-
-    X = dataset[inputs]
-    y = dataset[output]
-
-    model = random.choice(MODEL_TYPES)()
-    model.fit(X, y)
-
-
-def predict_model(hypothetical_input: Dict[str, float]):
-    return model.predict_proba(
-        pd.DataFrame({input: [hypothetical_input[input]] for input in currInputs})
-    )[0, model.classes_.tolist().index(True)]
+    def predict_model(self, hypothetical_input: Dict[str, float]):
+        return self.model.predict_proba(
+            pd.DataFrame({input: [hypothetical_input[input]]
+                         for input in self.modelInputs})
+        )[0, self.model.classes_.tolist().index(True)]

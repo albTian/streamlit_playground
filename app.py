@@ -1,7 +1,9 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-from ml import train_model
+from ml import SimpleModel
+
+# For now, only bool is an acceptable output. Everything else is an input
 
 
 def getInputOutput(df):
@@ -15,26 +17,42 @@ def getInputOutput(df):
             allInputOptions.extend(g[g_key])
     return allInputOptions, allOutputOptions
 
-def train_model_callback(df, inputOptions, outputOption):
-    train_model(df, output=outputOption, inputs=inputOptions)
-    st.write("dogwater")
 
 def main():
     csv_file = st.file_uploader("Upload a CSV", type=["csv"])
-    if (csv_file):
-        # Read the table
-        df = pd.read_csv(csv_file)
+    if (not csv_file):
+        return
 
-        # Display the table
-        number = st.slider("Display how many rows", 0, len(df))
-        st.write(df.head(number))
+    # Read the table
+    df = pd.read_csv(csv_file)
 
-        # Select input options
-        allInputOptions, allOutputOptions = getInputOutput(df)
-        inputOptions = st.multiselect("Pick input features",allInputOptions)
-        outputOption = st.radio("Pick an output options",allOutputOptions)
+    # Display the table
+    number = st.slider("Display how many rows", 0, len(df))
+    st.write(df.head(number))
 
-        # Train model
-        st.button("Train model", on_click=train_model_callback, args=(df, inputOptions, outputOption))
+    # Select input options
+    allInputOptions, allOutputOptions = getInputOutput(df)
+    inputOptions = st.multiselect("Pick input features", allInputOptions)
+    outputOption = st.radio("Pick an output options", allOutputOptions)
+
+    # Train model
+    if (len(inputOptions) < 1):
+        return
+
+    # Add button to train model here...
+    model = SimpleModel(outputOption, inputOptions)
+    model.train_model(df)
+
+    # Display hypothetical inputs
+    input_dict = {}
+    for inputOption in inputOptions:
+        col = df[inputOption]
+        if (col.dtype == int):
+            input_dict[inputOption] = st.slider(f"Select hypothetical {inputOption}: [{min(col)}, {max(col)}]", min_value=min(
+                col), max_value=max(col))
+
+    prediction = model.predict_model(input_dict)
+    st.write(f"""### Probability of `{outputOption}` being true: `{prediction}`""")
+
 
 main()
